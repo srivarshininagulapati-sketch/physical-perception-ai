@@ -12,39 +12,84 @@ params = {
     "limit": 1
 }
 
-response = requests.get(url, headers=headers, params=params)
+# -----------------------------
+# ACTION LAYER
+# -----------------------------
+def perform_action(label, confidence):
+    if label == "person" and confidence > 0.7:
+        print("🔊 ACTION: ALERT TRIGGERED")
+        print("📢 Human detected with high confidence!")
+        print("💡 Smart Perception System Activated\n")
 
-print("Status Code:", response.status_code)
+    elif label == "person":
+        print("⚠️ ACTION: Human detected (low confidence)\n")
 
-if response.status_code == 200:
-    data = response.json()
+    else:
+        print("🟢 ACTION: System idle - safe environment\n")
 
+
+# -----------------------------
+# API CALL FUNCTION
+# -----------------------------
+def get_data():
     try:
-        objects = data['data'][0]['data']['objects']
+        response = requests.get(url, headers=headers, params=params, timeout=5)
+        print("Status Code:", response.status_code)
+
+        if response.status_code != 200:
+            return None
+
+        return response.json()
+
+    except Exception as e:
+        print("⚠️ API ERROR:", e)
+        return None
+
+
+# -----------------------------
+# MAIN LOGIC
+# -----------------------------
+data = get_data()
+
+if data:
+    try:
+        objects = (
+            data.get('data', [{}])[0]
+            .get('data', {})
+            .get('objects', [])
+        )
 
         print("\n👁️ LIVE VISION ACTIVE")
         print("📡 Scanning Environment...\n")
 
+        if not objects:
+            print("🚫 No objects detected\n")
+
         for obj in objects:
-            label = obj['label']
-            confidence = obj['confidence']
+            label = obj.get('label', 'unknown')
+            confidence = obj.get('confidence', 0)
 
             print(f"- Detected: {label} ({confidence})")
 
-            # 🔥 SMART DECISION ENGINE (WINNER FEATURE)
-            if label == "person" and confidence > 0.7:
-                print("🔥 HIGH CONFIDENCE HUMAN DETECTED → ALERT MODE ACTIVE")
-                print("📡 Sending signal to system...")
-                print("💡 Smart Perception System Activated\n")
-
-            elif label == "person":
-                print("⚠️ HUMAN DETECTED BUT LOW CONFIDENCE\n")
-
-            else:
-                print("🚫 NO HUMAN → SYSTEM IDLE\n")
+            perform_action(label, confidence)
 
     except Exception as e:
-        print("Error parsing data:", e)
+        print("❌ PARSE ERROR:", e)
 
 else:
-    print("❌ API Error or No Stream Active")
+    # -----------------------------
+    # FALLBACK MODE (VERY IMPORTANT)
+    # -----------------------------
+    print("\n⚠️ API NOT AVAILABLE - SWITCHING TO FALLBACK MODE")
+
+    fallback_objects = [
+        {"label": "person", "confidence": 0.85},
+        {"label": "chair", "confidence": 0.90}
+    ]
+
+    print("\n👁️ SIMULATED VISION ACTIVE")
+    print("📡 Running fallback perception...\n")
+
+    for obj in fallback_objects:
+        print(f"- Detected: {obj['label']} ({obj['confidence']})")
+        perform_action(obj['label'], obj['confidence'])
