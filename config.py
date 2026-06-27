@@ -1,1 +1,0 @@
-API_KEY = "aff_live_84e9cc0b82298d049dcd7135645f9b76"
